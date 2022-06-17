@@ -1,3 +1,4 @@
+from flask import request
 import mysql.connector
 from mysql_connection import get_connection
 from flask_restful import Resource
@@ -51,3 +52,76 @@ class RecipeResource(Resource) :
             "count" : len(result_list),
             "result_list" : result_list
         }, 200
+
+    # 데이터를 업데이트하는 API들은 put 함수를 사용한다.
+    def put(self, recipe_id) :
+        # body에서 전달 된 데이터를 처리
+        data = request.get_json()
+
+        # API 실행 코드
+        try :
+            # DATA UPDATE
+            # 1. Connect DB
+            connection = get_connection()
+
+            # 2. SQL Query
+            query = '''
+                    update recipe set
+                        name=%s, description=%s, cook_time=%s, direction=%s
+                    where id = %s;
+                    '''
+            record = (data['name'], data['description'], data['cook_time'], data['direction'], recipe_id)
+            # 3. Get Cursor
+            cursor = connection.cursor()
+            # 4. Execute Query with cursor
+            cursor.execute(query, record)
+            # 5. DATA commit at DB
+            connection.commit()
+            # 6. Close Resource
+            cursor.close()
+            connection.close()
+
+        except mysql.connector.Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+            return {"error" : str(e)}, 503 #HTTPStatus.SERVICE_UNAVAILABLE
+
+        # 정상적으로 됐을 때 200, 기본 값이므로 생략 가능
+        return {"result" : "success"}, 200
+
+    # 데이터를 삭제하는 API들은 delete 함수를 사용한다.
+    def delete(self, recipe_id) :
+        # body에서 전달 된 데이터를 처리
+        data = request.get_json()
+
+        # API 실행 코드
+        try :
+            # DATA DELETE
+            # 1. Connect DB
+            connection = get_connection()
+
+            # 2. SQL Query
+            query = '''
+                    delete from recipe
+                    where id = %s;
+                    '''
+            record = (recipe_id, )
+            # 3. Get Cursor
+            cursor = connection.cursor()
+            # 4. Execute Query with cursor
+            cursor.execute(query, record)
+            # 5. DATA commit at DB
+            connection.commit()
+            # 6. Close Resource
+            cursor.close()
+            connection.close()
+
+        except mysql.connector.Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+            return {"error" : str(e)}, 503 #HTTPStatus.SERVICE_UNAVAILABLE
+
+        # 정상적으로 됐을 때 200, 기본 값이므로 생략 가능
+        return {"result" : "success"}, 200
