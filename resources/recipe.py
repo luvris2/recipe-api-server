@@ -1,7 +1,8 @@
 from flask import request
+from flask_restful import Resource
 import mysql.connector
 from mysql_connection import get_connection
-from flask_restful import Resource
+
 
 # API를 만들기 위한 클래스 작성
 # 클래스 : 변수와 함수로 구성된 묶음
