@@ -59,9 +59,9 @@ class RecipeListResource(Resource) :
             query = '''
                         select *
                         from recipe
-                        limit
-                    ''' + offset + ''',''' + limit + ''';'''
-
+                        where is_publish = 1
+                        limit {}, {};'''.format(offset, limit)
+                        
             # dictionary=True : Call Key : Value
             # Select Data is Dictionary Type
             cursor = connection.cursor(dictionary=True)
