@@ -1,4 +1,5 @@
 from flask import request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource
 import mysql.connector
 from mysql_connection import get_connection
@@ -10,10 +11,17 @@ from mysql_connection import get_connection
 # API를 만들기 위한 클래스는 flask_restful 라이브러리의 Resource class를 상속해서 생성하여야 함
 class RecipeListResource(Resource) :
     # restful api의 methods에 해당하는 함수 작성
+
+    # 헤더 부분에 jwt_required()가 존재하지 않으면 get_jwt_identity가 작동하지 않음
+    @jwt_required()
+
     def post(self) :
         # api 실행 코드를 여기에 작성
         # 클라이언트에서 body 부분에 작성한 json을 받아오는 코드
         data = request.get_json()
+
+        # user_id의 토큰화 된 데이터를 다시 원복
+        user_id = get_jwt_identity()
         try :
             # DATA INSERT
             # 1. Connect DB
@@ -21,12 +29,11 @@ class RecipeListResource(Resource) :
             # 2. SQL Query
             query = '''
                     insert into recipe
-                        (name, description, cook_time, direction)
+                        (name, description, cook_time, direction, user_id)
                     values
-                        (%s, %s, %s, %s);
+                        (%s, %s, %s, %s, %s);
                     '''
-            record = (data['name'], data['description'], data['cook_time'], data['direction'] )
-            # 3. Get Cursor
+            record = (data['name'], data['description'], data['cook_time'], data['direction'], user_id)
             cursor = connection.cursor()
             # 4. Execute Query with cursor
             #cursor.execute(query)

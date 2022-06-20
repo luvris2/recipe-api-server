@@ -1,4 +1,6 @@
+import datetime
 from flask import request
+from flask_jwt_extended import create_access_token
 from flask_restful import Resource
 import mysql.connector
 from mysql_connection import get_connection
@@ -31,27 +33,37 @@ class UserRegisterResource(Resource) :
         # data['password']
         hashed_password = hash_password( data['password'] )
         
-        query = '''
-        insert into user
-            (username, email, password)
-        values
-            (%s ,%s ,%s);
-        '''
-        record = ( data['username'], data['email'], hashed_password )
-        connection = get_connection()
-        cursor = connection.cursor()
-        cursor.execute(query, record)
-        connection.commit()
+        try :
+            query = '''
+            insert into user
+                (username, email, password)
+            values
+                (%s ,%s ,%s);
+            '''
+            record = ( data['username'], data['email'], hashed_password )
+            connection = get_connection()
+            cursor = connection.cursor()
+            cursor.execute(query, record)
+            connection.commit()
 
-        # DB에 저장된 ID 컬럼의 값 가져오기
-        user_id = cursor.lastrowid
+            # DB에 저장된 ID 컬럼의 값 가져오기
+            user_id = cursor.lastrowid
 
-        cursor.close()
-        connection.close()
+            cursor.close()
+            connection.close()
+
+            # 'user_id' JWT 암호화
+            access_token = create_access_token(user_id)
+
+        except mysql.connector.Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+            return {"error" : str(e)}, 503 #HTTPStatus.SERVICE_UNAVAILABLE
 
         return {
             "result" : "success",
-            "user_id" : user_id,
+            "access_token" : access_token,
             "hash password" : hashed_password
          }
 
@@ -93,4 +105,7 @@ class UserLoginResource(Resource) :
         if check == False :
             return {"error" : "비밀번호가 맞지 않습니다."}, 400
 
-        return { "result" : "success", "user_id" : user_info["id"] }, 200
+        # 'user_id' JWT 암호화
+        access_token = create_access_token(user_info['id'], expires_delta=datetime.timedelta(minutes=1))
+
+        return { "result" : "success", "access_tokken" : access_token }, 200

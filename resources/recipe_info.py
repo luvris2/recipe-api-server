@@ -1,4 +1,5 @@
 from flask import request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 import mysql.connector
 from mysql_connection import get_connection
 from flask_restful import Resource
@@ -54,6 +55,7 @@ class RecipeResource(Resource) :
         }, 200
 
     # 데이터를 업데이트하는 API들은 put 함수를 사용한다.
+    @jwt_required()
     def put(self, recipe_id) :
         # body에서 전달 된 데이터를 처리
         data = request.get_json()
@@ -63,6 +65,22 @@ class RecipeResource(Resource) :
             # DATA UPDATE
             # 1. Connect DB
             connection = get_connection()
+
+            user_id = get_jwt_identity()
+
+            # recipe_id = user_id 확인
+            query = '''select user_id from recipe where id = %s;'''
+            record = (recipe_id, )
+            cursor = connection.cursor(dictionary = True)
+            cursor.execute(query, record)
+            result_list = cursor.fetchall()
+            recipe = result_list[0]
+            if recipe['user_id'] != user_id :
+                cursor.close()
+                connection.close()
+                return { "error" : "님의 레시피를 수정할 수 없습니다."}
+
+
 
             # 2. SQL Query
             query = '''
