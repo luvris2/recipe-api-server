@@ -1,6 +1,6 @@
 import datetime
 from flask import request
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, get_jwt, jwt_required
 from flask_restful import Resource
 import mysql.connector
 from mysql_connection import get_connection
@@ -106,6 +106,20 @@ class UserLoginResource(Resource) :
             return {"error" : "비밀번호가 맞지 않습니다."}, 400
 
         # 'user_id' JWT 암호화
-        access_token = create_access_token(user_info['id'], expires_delta=datetime.timedelta(minutes=1))
+        access_token = create_access_token(user_info['id'])
 
         return { "result" : "success", "access_tokken" : access_token }, 200
+
+jwt_blocklist = set()
+
+class UserLogoutResource(Resource) :
+    # jwt_required : 토큰이 있어야 아래의 코드를 실행
+    @jwt_required()
+    def post(self) :
+
+        jti = get_jwt()['jti']
+        print(jti)
+
+        jwt_blocklist.add(jti)
+
+        return { "result" : "로그아웃이 정상처리되었습니다."}
